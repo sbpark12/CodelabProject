@@ -626,6 +626,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3365972350960005635, guid: d1883f9db91a049269abf8de3db5b1b2, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5456674480264276972, guid: d1883f9db91a049269abf8de3db5b1b2, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
@@ -633,6 +637,10 @@ PrefabInstance:
     - target: {fileID: 5568495127882644996, guid: d1883f9db91a049269abf8de3db5b1b2, type: 3}
       propertyPath: m_Name
       value: ARAnchorPopup
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615991364235004628, guid: d1883f9db91a049269abf8de3db5b1b2, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8983894061904331145, guid: d1883f9db91a049269abf8de3db5b1b2, type: 3}
       propertyPath: m_AnchorMax.y

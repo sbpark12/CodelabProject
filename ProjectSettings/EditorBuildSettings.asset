@@ -6,14 +6,14 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/TapARAnchorScene.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
     path: Assets/Scenes/GeospatialAnchorScene.unity
     guid: 52daeeaad480745d4a79db4925720beb
   - enabled: 1
     path: Assets/Scenes/VPSScene.unity
     guid: 5762bf89cfa3147deac77bb00d678780
-  - enabled: 1
-    path: Assets/Scenes/ARAnchorScene.unity
-    guid: 9fc0d4010bbf28b4594072e72b8655ab
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 8670564add7a24650ad57d5face3fda2, type: 2}
     UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: bd36c3cdc883b464d9705dd0c3b5b6d2, type: 2}

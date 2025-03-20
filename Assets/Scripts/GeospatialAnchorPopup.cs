@@ -26,6 +26,7 @@ public class GeospatialAnchorPopup : MonoBehaviour
     public TextMeshProUGUI AccuracyStatusText;
     public TextMeshProUGUI PositionStatusText;
     public GameObject AnchorPrefab;
+    private bool waitingForLocationService = false;
 
     // public RectTransform GuidePanel;
 
@@ -290,46 +291,45 @@ public class GeospatialAnchorPopup : MonoBehaviour
         isReturning = true;
     }
 
-    IEnumerator StartLocationService()
+
+    private IEnumerator StartLocationService()
     {
+        waitingForLocationService = true;
+#if UNITY_ANDROID
+        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
+        {
+            Debug.Log("Requesting the fine location permission.");
+            Permission.RequestUserPermission(Permission.FineLocation);
+            yield return new WaitForSeconds(3.0f);
+        }
+#endif
+
         if (!Input.location.isEnabledByUser)
         {
-            Debug.LogError("Location services are not enabled by the user.");
+            Debug.Log("Location service is disabled by the user.");
+            waitingForLocationService = false;
             yield break;
         }
 
-        if (Input.location.status == LocationServiceStatus.Running)
+        Debug.Log("Starting location service.");
+        Input.location.Start();
+
+        while (Input.location.status == LocationServiceStatus.Initializing)
         {
-            Debug.Log("Location services are already running.");
+            yield return null;
+        }
+
+        waitingForLocationService = false;
+        if (Input.location.status != LocationServiceStatus.Running)
+        {
+            Debug.LogWarningFormat(
+                "Location service ended with {0} status.", Input.location.status);
+            Input.location.Stop();
+
             yield break;
         }
 
-        Input.location.Start(); // 위치 서비스 시작
-        Debug.Log("Starting location service...");
-
-        int maxWait = 20; // 최대 대기 시간 (초)
-        while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
-        {
-            Debug.Log("Waiting for location services to initialize...");
-            yield return new WaitForSeconds(1);
-            maxWait--;
-        }
-
-        if (Input.location.status == LocationServiceStatus.Failed)
-        {
-            Debug.LogError("Failed to start location services.");
-            yield break;
-        }
-
-        if (Input.location.status == LocationServiceStatus.Running)
-        {
-            Debug.Log("Location services started successfully.");
-        }
-        else
-        {
-            Debug.LogError("Location service failed to start for unknown reasons.");
-            yield break;
-        }
+        yield return new WaitForSeconds(2f);
     }
 
     private IEnumerator AvailabilityCheck()

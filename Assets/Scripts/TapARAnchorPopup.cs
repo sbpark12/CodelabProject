@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Android;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.XR.ARCore;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -26,8 +27,9 @@ public class ARAnchorPopup : MonoBehaviour
     public TextMeshProUGUI VpsStatusText;
     public TextMeshProUGUI AccuracyStatusText;
     public TextMeshProUGUI PositionStatusText;
-    // public RectTransform GuidePanel;
+    public RectTransform VpsGuidePanel;
     public GameObject AnchorPrefab;
+    public Toggle AnchorTypeToggle;
 
     private const string localizationInstructionMessage =
         "Point your camera at buildings, stores, and signs near you.";
@@ -46,14 +48,19 @@ public class ARAnchorPopup : MonoBehaviour
 
     private VpsAvailability vpsAvailability;
 
-    private const double orientationYawAccuracyThreshold = 33;
-    private const double horizontalAccuracyThreshold = 33;
-    private const double verticalAccuracyThreshold = 33;
-
+    private const double orientationYawAccuracyThreshold = 10;
+    private const double horizontalAccuracyThreshold = 10;
+    private const double verticalAccuracyThreshold = 10;
+    private IEnumerator startLocationService = null;
     private IEnumerator asyncCheck = null;
+    private bool waitingForLocationService = false;
+
+
     public void OnEnable()
     {
         isLocalizing = true;
+        StartCoroutine(AvailabilityCheck());
+        AnchorTypeToggle.isOn = false;
     }
 
     void Start()
@@ -76,25 +83,39 @@ public class ARAnchorPopup : MonoBehaviour
 
     void Update()
     {
+
         checkAR();
+
+        var pose = EarthManager.CameraGeospatialPose;
+
+        bool isAllReady = isARReady &&
+                // pose.OrientationYawAccuracy < orientationYawAccuracyThreshold &&
+                pose.HorizontalAccuracy < horizontalAccuracyThreshold &&
+                pose.VerticalAccuracy < verticalAccuracyThreshold;
+
+        AccuracyStatusText.text = String.Format("h: {0}, v: {1}, o: {2}",
+         pose.HorizontalAccuracy, pose.VerticalAccuracy, pose.OrientationYawAccuracy);
+
         if (ARSession.state != ARSessionState.SessionTracking)
         {
             Debug.Log("ARSession is not tracking, skipping anchor updates.");
             return;
         }
 
-
         if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began
                && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
         {
-            PlaceAnchorByScreenTap(Input.GetTouch(0).position);
+
+
+
+            createArAnchorByTap(Input.GetTouch(0).position);
         }
     }
 
-    private void PlaceAnchorByScreenTap(Vector2 position)
+    private void createArAnchorByTap(Vector2 position)
     {
         List<ARRaycastHit> planeHitResults = new List<ARRaycastHit>();
-        RaycastManager.Raycast(position, planeHitResults, TrackableType.Planes | TrackableType.FeaturePoint);
+        RaycastManager.Raycast(position, planeHitResults, TrackableType.Planes);
 
         if (planeHitResults.Count > 0)
         {
@@ -104,7 +125,7 @@ public class ARAnchorPopup : MonoBehaviour
 
             anchorList.Add(anchorObject);
 
-            Debug.Log($"Anchor placed at: {anchor.transform.position}");
+            Debug.Log($"AR Anchor placed at: {anchor.transform.position}");
         }
     }
 
@@ -136,7 +157,6 @@ public class ARAnchorPopup : MonoBehaviour
         {
             return;
         }
-
 
         // Check feature support and enable Geospatial API when it's supported.
         var featureSupport = EarthManager.IsGeospatialModeSupported(GeospatialMode.Enabled);
@@ -252,6 +272,7 @@ public class ARAnchorPopup : MonoBehaviour
 
         ReturnWithReason(returningReason);
     }
+
     private void ReturnWithReason(string reason)
     {
         if (string.IsNullOrEmpty(reason))
@@ -262,6 +283,121 @@ public class ARAnchorPopup : MonoBehaviour
         Debug.LogError(reason);
         LocalizeStatusText.text = reason;
         isReturning = true;
+    }
+
+    private IEnumerator StartLocationService()
+    {
+        waitingForLocationService = true;
+#if UNITY_ANDROID
+        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
+        {
+            Debug.Log("Requesting the fine location permission.");
+            Permission.RequestUserPermission(Permission.FineLocation);
+            yield return new WaitForSeconds(3.0f);
+        }
+#endif
+
+        if (!Input.location.isEnabledByUser)
+        {
+            Debug.Log("Location service is disabled by the user.");
+            waitingForLocationService = false;
+            yield break;
+        }
+
+        Debug.Log("Starting location service.");
+        Input.location.Start();
+
+        while (Input.location.status == LocationServiceStatus.Initializing)
+        {
+            yield return null;
+        }
+
+        waitingForLocationService = false;
+        if (Input.location.status != LocationServiceStatus.Running)
+        {
+            Debug.LogWarningFormat(
+                "Location service ended with {0} status.", Input.location.status);
+            Input.location.Stop();
+
+            yield break;
+        }
+
+        yield return new WaitForSeconds(2f);
+    }
+
+
+    private IEnumerator AvailabilityCheck()
+    {
+        yield return StartCoroutine(StartLocationService());
+
+        Debug.Log("AvailabilityCheck started!"); // 실행 확인용 로그
+
+        if (ARSession.state == ARSessionState.None)
+        {
+            yield return ARSession.CheckAvailability();
+        }
+
+        yield return null; // Waiting for ARSessionState.CheckingAvailability.
+
+        if (ARSession.state == ARSessionState.NeedsInstall)
+        {
+            yield return ARSession.Install();
+        }
+
+        yield return null; // Waiting for ARSessionState.Installing.
+
+#if UNITY_ANDROID
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+        {
+            Debug.Log("Requesting camera permission.");
+            Permission.RequestUserPermission(Permission.Camera);
+            yield return new WaitForSeconds(3.0f);
+        }
+
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+        {
+            Debug.LogWarning("Failed to get the camera permission. VPS availability check isn't available.");
+            yield break;
+        }
+#endif
+
+        if (Input.location.status != LocationServiceStatus.Running)
+        {
+            Debug.LogWarning("Location services aren't running. VPS availability check is not available.");
+            yield break;
+        }
+
+        if (isReturning)
+        {
+            Debug.Log("isReturning is TRUE, stopping AvailabilityCheck");
+            yield break;
+        }
+
+        var location = Input.location.lastData;
+
+        // 🚀 추가: 위치 데이터가 유효한지 확인
+        if (location.latitude == 0 && location.longitude == 0)
+        {
+            Debug.LogError("GPS data is invalid! Latitude and Longitude are both zero.");
+            yield break;
+        }
+
+        Debug.Log($"Latitude: {location.latitude}, Longitude: {location.longitude}");
+
+        var vpsAvailabilityPromise = AREarthManager.CheckVpsAvailabilityAsync(location.latitude, location.longitude);
+        yield return vpsAvailabilityPromise;
+
+        if (vpsAvailabilityPromise == null)
+        {
+            Debug.LogError("VPS Availability check failed: Null response.");
+            yield break;
+        }
+
+        vpsAvailability = vpsAvailabilityPromise.Result;
+        string vpsStatus = $"VPS Availability at ({location.latitude}, {location.longitude}): {vpsAvailability}";
+
+        VpsStatusText.text = vpsStatus;
+        Debug.Log("vps status: " + vpsStatus);
     }
 
     #endregion
