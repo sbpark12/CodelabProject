@@ -23,23 +23,8 @@ public class ARAnchorPopup : MonoBehaviour
     public ARAnchorManager AnchorManager;
     public ARRaycastManager RaycastManager;
 
-    public TextMeshProUGUI LocalizeStatusText;
-    public TextMeshProUGUI VpsStatusText;
-    public TextMeshProUGUI AccuracyStatusText;
-    public TextMeshProUGUI PositionStatusText;
-    public RectTransform VpsGuidePanel;
     public GameObject AnchorPrefab;
-    public Toggle AnchorTypeToggle;
 
-    private const string localizationInstructionMessage =
-        "Point your camera at buildings, stores, and signs near you.";
-    private const string localizationFailureMessage =
-        "Localization not possible.\n" +
-        "Close and open the app to restart the session.";
-    private const string localizationSuccessMessage = "Localization completed.";
-    private const float timeoutSeconds = 180;
-    private bool isLocalizing = false;
-    private float localizationPassedTime = 0f;
     private float configurePrepareTime = 3f;
     private bool isReturning = false;
     private bool enablingGeospatial = false;
@@ -58,9 +43,7 @@ public class ARAnchorPopup : MonoBehaviour
 
     public void OnEnable()
     {
-        isLocalizing = true;
         StartCoroutine(AvailabilityCheck());
-        AnchorTypeToggle.isOn = false;
     }
 
     void Start()
@@ -86,15 +69,7 @@ public class ARAnchorPopup : MonoBehaviour
 
         checkAR();
 
-        var pose = EarthManager.CameraGeospatialPose;
-
-        bool isAllReady = isARReady &&
-                // pose.OrientationYawAccuracy < orientationYawAccuracyThreshold &&
-                pose.HorizontalAccuracy < horizontalAccuracyThreshold &&
-                pose.VerticalAccuracy < verticalAccuracyThreshold;
-
-        AccuracyStatusText.text = String.Format("h: {0}, v: {1}, o: {2}",
-         pose.HorizontalAccuracy, pose.VerticalAccuracy, pose.OrientationYawAccuracy);
+        if (!isARReady) return;
 
         if (ARSession.state != ARSessionState.SessionTracking)
         {
@@ -281,7 +256,6 @@ public class ARAnchorPopup : MonoBehaviour
         }
 
         Debug.LogError(reason);
-        LocalizeStatusText.text = reason;
         isReturning = true;
     }
 
@@ -396,7 +370,6 @@ public class ARAnchorPopup : MonoBehaviour
         vpsAvailability = vpsAvailabilityPromise.Result;
         string vpsStatus = $"VPS Availability at ({location.latitude}, {location.longitude}): {vpsAvailability}";
 
-        VpsStatusText.text = vpsStatus;
         Debug.Log("vps status: " + vpsStatus);
     }
 

@@ -86,7 +86,6 @@ public class GeospatialAnchorPopup : MonoBehaviour
         pose = EarthManager.CameraGeospatialPose;
 
         bool isAllReady = isARReady &&
-                // pose.OrientationYawAccuracy < orientationYawAccuracyThreshold &&
                 pose.HorizontalAccuracy < horizontalAccuracyThreshold &&
                 pose.VerticalAccuracy < verticalAccuracyThreshold;
 
