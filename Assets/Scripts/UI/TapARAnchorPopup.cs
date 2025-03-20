@@ -22,7 +22,9 @@ public class ARAnchorPopup : MonoBehaviour
     public ARCoreExtensions ARCoreExtensions;
     public ARAnchorManager AnchorManager;
     public ARRaycastManager RaycastManager;
-
+    // public RectTransform infoPanel;
+    // public Camera arCamera;
+    // public ClickableMarker AnchorPrefab;
     public GameObject AnchorPrefab;
 
     private float configurePrepareTime = 3f;
@@ -86,8 +88,7 @@ public class ARAnchorPopup : MonoBehaviour
             createArAnchorByTap(Input.GetTouch(0).position);
         }
     }
-
-    private void createArAnchorByTap(Vector2 position)
+private void createArAnchorByTap(Vector2 position)
     {
         List<ARRaycastHit> planeHitResults = new List<ARRaycastHit>();
         RaycastManager.Raycast(position, planeHitResults, TrackableType.Planes);
@@ -95,16 +96,59 @@ public class ARAnchorPopup : MonoBehaviour
         if (planeHitResults.Count > 0)
         {
             GameObject anchorObject = Instantiate(AnchorPrefab, planeHitResults[0].pose.position, planeHitResults[0].pose.rotation);
-
             ARAnchor anchor = anchorObject.AddComponent<ARAnchor>();
 
-            anchorList.Add(anchorObject);
+            // anchorList.Add(anchorObject);
 
             Debug.Log($"AR Anchor placed at: {anchor.transform.position}");
         }
     }
 
+#region Clickable Anchor
+    // private void createClickableArAnchorByTap(Vector2 position)
+    // {
+    //     List<ARRaycastHit> planeHitResults = new List<ARRaycastHit>();
+    //     RaycastManager.Raycast(position, planeHitResults, TrackableType.Planes);
 
+    //     if (planeHitResults.Count > 0)
+    //     {
+    //         Vector2 touchPosition = Input.GetTouch(0).position;
+
+    //         Ray ray = arCamera.ScreenPointToRay(touchPosition);
+    //         if (Physics.Raycast(ray, out RaycastHit hit))
+    //         {
+    //             if (hit.collider.CompareTag("Anchor"))
+    //             {
+    //                 Debug.Log("기존 앵커 클릭됨, 새로운 앵커 생성 안 함");
+    //                 return;
+    //             }
+    //         }
+
+    //         ClickableMarker anchorObject = Instantiate(AnchorPrefab, planeHitResults[0].pose.position, planeHitResults[0].pose.rotation);
+    //         anchorObject.Init(onClickAnchor);
+    //         ARAnchor anchor = anchorObject.gameObject.AddComponent<ARAnchor>();
+
+    //         Debug.Log($"AR Anchor placed at: {anchor.transform.position}");
+    //     }
+    // }
+
+    // private void onClickAnchor(Vector3 position)
+    // {
+    //     StopAllCoroutines();
+    //     StartCoroutine(ShowInfoPanel(position));
+    // }
+
+    // IEnumerator ShowInfoPanel(Vector3 position)
+    // {
+    //     Vector2 screenPosition = arCamera.WorldToScreenPoint(position);
+
+    //     infoPanel.position = screenPosition;
+    //     Debug.Log($"info panel position: {screenPosition.x}, {screenPosition.y}");
+    //     infoPanel.gameObject.SetActive(true);
+    //     yield return new WaitForSecondsRealtime(1f);
+    //     infoPanel.gameObject.SetActive(false);
+    // }
+#endregion
     public void ClearAllAnchor()
     {
         foreach (var anchor in anchorList)
