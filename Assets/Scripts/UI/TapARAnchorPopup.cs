@@ -1,10 +1,6 @@
 ﻿using Google.XR.ARCoreExtensions;
-using Google.XR.ARCoreExtensions.Samples.Geospatial;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.Android;
@@ -31,16 +27,16 @@ public class ARAnchorPopup : MonoBehaviour
     private bool isReturning = false;
     private bool enablingGeospatial = false;
     private bool isARReady = false;
-    private List<GameObject> anchorList = new List<GameObject>();
-
     private VpsAvailability vpsAvailability;
 
-    private const double orientationYawAccuracyThreshold = 10;
-    private const double horizontalAccuracyThreshold = 10;
-    private const double verticalAccuracyThreshold = 10;
-    private IEnumerator startLocationService = null;
     private IEnumerator asyncCheck = null;
+
+    // private const double orientationYawAccuracyThreshold = 10;
+    // private const double horizontalAccuracyThreshold = 10;
+    // private const double verticalAccuracyThreshold = 10;
+    private IEnumerator startLocationService = null;
     private bool waitingForLocationService = false;
+    private List<GameObject> anchorList = new List<GameObject>();
 
 
     public void OnEnable()
@@ -82,13 +78,11 @@ public class ARAnchorPopup : MonoBehaviour
         if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began
                && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
         {
-
-
-
             createArAnchorByTap(Input.GetTouch(0).position);
         }
     }
-private void createArAnchorByTap(Vector2 position)
+
+    private void createArAnchorByTap(Vector2 position)
     {
         List<ARRaycastHit> planeHitResults = new List<ARRaycastHit>();
         RaycastManager.Raycast(position, planeHitResults, TrackableType.Planes);
@@ -104,7 +98,7 @@ private void createArAnchorByTap(Vector2 position)
         }
     }
 
-#region Clickable Anchor
+    #region Clickable Anchor
     // private void createClickableArAnchorByTap(Vector2 position)
     // {
     //     List<ARRaycastHit> planeHitResults = new List<ARRaycastHit>();
@@ -148,7 +142,7 @@ private void createArAnchorByTap(Vector2 position)
     //     yield return new WaitForSecondsRealtime(1f);
     //     infoPanel.gameObject.SetActive(false);
     // }
-#endregion
+    #endregion
     public void ClearAllAnchor()
     {
         foreach (var anchor in anchorList)
